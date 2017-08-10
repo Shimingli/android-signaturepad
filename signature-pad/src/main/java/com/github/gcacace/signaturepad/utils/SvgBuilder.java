@@ -13,6 +13,12 @@ public class SvgBuilder {
         mCurrentPathBuilder = null;
     }
 
+    /**
+     * 构建svg图片的路径和格式
+     * @param width
+     * @param height
+     * @return
+     */
     public String build(final int width, final int height) {
         if (isPathStarted()) {
             appendCurrentPath();
@@ -39,7 +45,7 @@ public class SvgBuilder {
                 .append("stroke-linejoin=\"round\" ")
                 .append("stroke-linecap=\"round\" ")
                 .append("fill=\"none\" ")
-                .append("stroke=\"black\"")
+                .append("stroke=\"blue\"")
                 .append(">")
                 .append(mSvgPathsBuilder)
                 .append("</g>")

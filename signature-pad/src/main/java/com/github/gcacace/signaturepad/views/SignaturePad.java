@@ -13,7 +13,9 @@ import android.os.Bundle;
 import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewTreeObserver;
 
 import com.github.gcacace.signaturepad.R;
@@ -21,6 +23,7 @@ import com.github.gcacace.signaturepad.utils.Bezier;
 import com.github.gcacace.signaturepad.utils.ControlTimedPoints;
 import com.github.gcacace.signaturepad.utils.SvgBuilder;
 import com.github.gcacace.signaturepad.utils.TimedPoint;
+import com.github.gcacace.signaturepad.utils.logger.KLog;
 import com.github.gcacace.signaturepad.view.ViewCompat;
 import com.github.gcacace.signaturepad.view.ViewTreeObserverCompat;
 
@@ -59,15 +62,18 @@ public class SignaturePad extends View {
     private static final int DOUBLE_CLICK_DELAY_MS = 200;
 
     //Default attribute values
-    private final int DEFAULT_ATTR_PEN_MIN_WIDTH_PX = 3;
-    private final int DEFAULT_ATTR_PEN_MAX_WIDTH_PX = 7;
-    private final int DEFAULT_ATTR_PEN_COLOR = Color.BLACK;
-    private final float DEFAULT_ATTR_VELOCITY_FILTER_WEIGHT = 0.9f;
+    private final int DEFAULT_ATTR_PEN_MIN_WIDTH_PX = 10;//最小的宽度
+    private final int DEFAULT_ATTR_PEN_MAX_WIDTH_PX = 10;//最大的宽度
+    private final int DEFAULT_ATTR_PEN_COLOR = Color.BLUE;
+    private final float DEFAULT_ATTR_VELOCITY_FILTER_WEIGHT = 500.0f;
     private final boolean DEFAULT_ATTR_CLEAR_ON_DOUBLE_CLICK = false;
 
     private Paint mPaint = new Paint();
     private Bitmap mSignatureBitmap = null;
     private Canvas mSignatureBitmapCanvas = null;
+    private VelocityTracker mVelocityTracker;
+    private int velocityValueX;
+    private int mYVelocity;
 
     public SignaturePad(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -167,7 +173,7 @@ public class SignaturePad extends View {
     }
 
     /**
-     * Set the velocity filter weight.
+     * Set the velocity filter weight.  设置速度过滤器的重量。
      *
      * @param velocityFilterWeight the weight.
      */
@@ -203,9 +209,13 @@ public class SignaturePad extends View {
 
         float eventX = event.getX();
         float eventY = event.getY();
+        KLog.d("shiming " + "eventX==" + eventX+"eventY=="+eventY);
+        // 跟踪滑动的速度
+        obtainVelocityTracker(event);
 
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
+
                 getParent().requestDisallowInterceptTouchEvent(true);
                 mPoints.clear();
                 if (isDoubleClick()) break;
@@ -215,11 +225,19 @@ public class SignaturePad extends View {
                 if(mOnSignedListener != null) mOnSignedListener.onStartSigning();
 
             case MotionEvent.ACTION_MOVE:
+                // 计算并获取滑动速度
+                mVelocityTracker.computeCurrentVelocity(1000, ViewConfiguration.getMaximumFlingVelocity());
+                velocityValueX = (int) mVelocityTracker.getXVelocity();
+                mYVelocity = (int) mVelocityTracker.getYVelocity();
+                //以 xy轴的方向 一个速度的监听 目前定义在2000的时候我画的就不要太粗了
+                KLog.d("shiming 滑动速度的监听 xx==" +velocityValueX +"yy=="+mYVelocity);
                 resetDirtyRect(eventX, eventY);
                 addPoint(getNewPoint(eventX, eventY));
                 break;
 
             case MotionEvent.ACTION_UP:
+                releaseVelocityTracker();
+
                 resetDirtyRect(eventX, eventY);
                 addPoint(getNewPoint(eventX, eventY));
                 getParent().requestDisallowInterceptTouchEvent(true);
@@ -229,15 +247,33 @@ public class SignaturePad extends View {
             default:
                 return false;
         }
-
-        //invalidate();
         invalidate(
                 (int) (mDirtyRect.left - mMaxWidth),
                 (int) (mDirtyRect.top - mMaxWidth),
                 (int) (mDirtyRect.right + mMaxWidth),
                 (int) (mDirtyRect.bottom + mMaxWidth));
-
+//        event.recycle();
         return true;
+    }
+    /**
+     * 监听滑动的速度的方法
+     *
+     * @param event
+     */
+    private void obtainVelocityTracker(MotionEvent event) {
+        if (mVelocityTracker == null) {
+            mVelocityTracker = VelocityTracker.obtain();
+        }
+        mVelocityTracker.addMovement(event);
+    }
+    /**
+     * 释放监听滑动速度方法
+     */
+    private void releaseVelocityTracker() {
+        if (mVelocityTracker != null) {
+            mVelocityTracker.recycle();
+            mVelocityTracker = null;
+        }
     }
 
     @Override
@@ -258,11 +294,13 @@ public class SignaturePad extends View {
     public String getSignatureSvg() {
         int width = getTransparentSignatureBitmap().getWidth();
         int height = getTransparentSignatureBitmap().getHeight();
+        System.out.println("shiming=====" +mSvgBuilder.build(width, height) );
         return mSvgBuilder.build(width, height);
     }
 
     public Bitmap getSignatureBitmap() {
         Bitmap originalBitmap = getTransparentSignatureBitmap();
+        KLog.d("shiming "+"originalBitmap==" +originalBitmap.getWidth() +"~~~~~~"+originalBitmap.getHeight());
         Bitmap whiteBgBitmap = Bitmap.createBitmap(originalBitmap.getWidth(), originalBitmap.getHeight(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(whiteBgBitmap);
         canvas.drawColor(Color.WHITE);
@@ -426,7 +464,7 @@ public class SignaturePad extends View {
             // Cache is empty, create a new point
             timedPoint = new TimedPoint();
         } else {
-            // Get point from cache
+            // list的集合remove掉最后一个点的，得到是元素，同时把最后的一个点的位置的角标重新给的赋值！
             timedPoint = mPointsCache.remove(mCacheSize-1);
         }
 
@@ -442,7 +480,7 @@ public class SignaturePad extends View {
 
         int pointsCount = mPoints.size();
         if (pointsCount > 3) {
-
+            //通过三个点，变成两个点，同事把第一个点加入到缓存中
             ControlTimedPoints tmp = calculateCurveControlPoints(mPoints.get(0), mPoints.get(1), mPoints.get(2));
             TimedPoint c2 = tmp.c2;
             recyclePoint(tmp.c1);
@@ -455,28 +493,33 @@ public class SignaturePad extends View {
 
             TimedPoint startPoint = curve.startPoint;
             TimedPoint endPoint = curve.endPoint;
-
+            KLog.d("shiming startPoint" +startPoint);
             float velocity = endPoint.velocityFrom(startPoint);
+            KLog.d("shiming velocity" +velocity);
             velocity = Float.isNaN(velocity) ? 0.0f : velocity;
 
             velocity = mVelocityFilterWeight * velocity
                     + (1 - mVelocityFilterWeight) * mLastVelocity;
+            KLog.d("shiming velocity===" +"mVelocityFilterWeight=" +mVelocityFilterWeight+"velocity=="+velocity
+                     +"1 - mVelocityFilterWeight"+(1 - mVelocityFilterWeight)+"mLastVelocity=="+mLastVelocity
+            );
+            KLog.d("shiming velocity===" +velocity);
 
-            // The new width is a function of the velocity. Higher velocities
-            // correspond to thinner strokes.
+            // 新的宽度是速度的函数。较高的速度对应于较薄的冲程。
             float newWidth = strokeWidth(velocity);
 
-            // The Bezier's width starts out as last curve's final width, and
-            // gradually changes to the stroke width just calculated. The new
-            // width calculation is based on the velocity between the Bezier's
-            // start and end mPoints.
+//            贝塞尔曲线的宽度以最后一条曲线的最终宽度开始，
+//            逐渐改变刚才计算的笔画宽度。新的
+//            宽度计算是基于Bezier之间的速度。
+//            开始和结束mpoints。
+            //这里已经在开始画着的bezier的整数了  mlastWidth 的宽度为10
             addBezier(curve, mLastWidth, newWidth);
 
             mLastVelocity = velocity;
             mLastWidth = newWidth;
 
-            // Remove the first element from the list,
-            // so that we always have no more than 4 mPoints in mPoints array.
+//            从列表中删除第一个元素，
+//            所以，我们总是mpoints阵列不超过4 mpoints。
             recyclePoint(mPoints.remove(0));
 
             recyclePoint(c2);
@@ -492,12 +535,13 @@ public class SignaturePad extends View {
     }
 
     private void addBezier(Bezier curve, float startWidth, float endWidth) {
-        mSvgBuilder.append(curve, (startWidth + endWidth) / 2);
+        //创建bitmap
         ensureSignatureBitmap();
         float originalWidth = mPaint.getStrokeWidth();
         float widthDelta = endWidth - startWidth;
+        //求最接近的一个整数
         float drawSteps = (float) Math.floor(curve.length());
-
+        KLog.d("Shiming   drawSteps=== "+drawSteps);
         for (int i = 0; i < drawSteps; i++) {
             // Calculate the Bezier (x, y) coordinate for this step.
             float t = ((float) i) / drawSteps;
@@ -517,8 +561,29 @@ public class SignaturePad extends View {
             y += 3 * u * tt * curve.control2.y;
             y += ttt * curve.endPoint.y;
 
-            // Set the incremental stroke width and draw.
-            mPaint.setStrokeWidth(startWidth + ttt * widthDelta);
+            float v = startWidth + ttt * widthDelta;
+            if (velocityValueX>mYVelocity) {
+                float kk=0.00333f;
+                float newKK=kk*Math.abs(velocityValueX);
+                float v1 = v - newKK;
+                mPaint.setStrokeWidth(v1);
+            }else {
+                float v1 = v - 0.00333f * Math.abs(mYVelocity);
+                KLog.d("shiming yyyy===" +v1);
+                mPaint.setStrokeWidth(v1);
+            }
+            //大于2000
+//            if (Math.abs(velocityValueX)>2000||Math.abs(mYVelocity)>2000){
+//                int absX = Math.abs(velocityValueX);
+//
+//
+//                mPaint.setStrokeWidth(1);
+//            }else{
+//                KLog.d("Shiming  正常的笔的宽度" +(startWidth + ttt * widthDelta));
+//                // Set the incremental stroke width and draw.
+//                mPaint.setStrokeWidth(startWidth + ttt * widthDelta);
+//            }
+
             mSignatureBitmapCanvas.drawPoint(x, y, mPaint);
             expandDirtyRect(x, y);
         }
@@ -554,6 +619,7 @@ public class SignaturePad extends View {
     }
 
     private float strokeWidth(float velocity) {
+        //取最大的值，在最大的宽度和最小的宽度
         return Math.max(mMaxWidth / (velocity + 1), mMinWidth);
     }
 
@@ -607,6 +673,7 @@ public class SignaturePad extends View {
         if (mSignatureBitmap == null) {
             mSignatureBitmap = Bitmap.createBitmap(getWidth(), getHeight(),
                     Bitmap.Config.ARGB_8888);
+            KLog.d("shiming  "+"getWidth()==" +getWidth() +"getHeiht==" +getHeight());
             mSignatureBitmapCanvas = new Canvas(mSignatureBitmap);
         }
     }

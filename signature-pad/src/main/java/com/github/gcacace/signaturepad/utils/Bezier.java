@@ -1,5 +1,7 @@
 package com.github.gcacace.signaturepad.utils;
 
+import com.github.gcacace.signaturepad.utils.logger.KLog;
+
 public class Bezier {
 
     public TimedPoint startPoint;
@@ -27,6 +29,7 @@ public class Bezier {
                     this.control2.x, this.endPoint.x);
             cy = point(t, this.startPoint.y, this.control1.y,
                     this.control2.y, this.endPoint.y);
+            KLog.d("shiming  cx===="+cx+"cy===="+cy);
             if (i > 0) {
                 xDiff = cx - px;
                 yDiff = cy - py;

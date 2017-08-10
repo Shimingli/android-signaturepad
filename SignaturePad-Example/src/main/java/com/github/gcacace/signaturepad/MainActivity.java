@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.net.Uri;
@@ -12,14 +13,25 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.text.Editable;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.style.ImageSpan;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.github.gcacace.signaturepad.utils.logger.KLog;
 import com.github.gcacace.signaturepad.views.SignaturePad;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -34,13 +46,43 @@ public class MainActivity extends Activity {
     private SignaturePad mSignaturePad;
     private Button mClearButton;
     private Button mSaveButton;
+    private DynamicAdapter mDynamicAdapter;
+    private String mAbsolutePath;
+    private EditText mEText;
+    private Bitmap mBitmap;
+    private static String full_name = "";
+    private static final String LAST_NAME = "img_";
+    private int first_name = 1;
+    private File mPhoto;
+    private Button mBitmapButton;
+    private ImageView mImageView;
+
+    public  void displayImage(String url, ImageView imageView, int defRes) {
+        Glide.with(this).load(url).diskCacheStrategy(DiskCacheStrategy.SOURCE).placeholder(defRes).error(defRes).into(imageView);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         verifyStoragePermissions(this);
+        AppContext.init(this);
         setContentView(R.layout.activity_main);
 
+        //        RecyclerView recyclerView = (RecyclerView) findViewById(R.id.rc_who_can_select);
+         mClearButton = (Button) findViewById(R.id.clear);
+        mSaveButton = (Button) findViewById(R.id.save);
+        mBitmapButton = (Button) findViewById(R.id.bitmap);
+        mImageView = (ImageView) findViewById(R.id.iamgeview);
+        //        GridLayoutManager gridLayoutManager = new GridLayoutManager(this, 5) {
+//            @Override
+//            public boolean canScrollVertically() {
+//                return true;
+//            }
+//        };
+//        recyclerView.setLayoutManager(gridLayoutManager);
+//        mDynamicAdapter = new DynamicAdapter(null,this);
+//        recyclerView.setAdapter(mDynamicAdapter);
+        mEText = (EditText) findViewById(R.id.modify_edit_text_view);
         mSignaturePad = (SignaturePad) findViewById(R.id.signature_pad);
         mSignaturePad.setOnSignedListener(new SignaturePad.OnSignedListener() {
             @Override
@@ -60,40 +102,92 @@ public class MainActivity extends Activity {
                 mClearButton.setEnabled(false);
             }
         });
-
-        mClearButton = (Button) findViewById(R.id.clear_button);
-        mSaveButton = (Button) findViewById(R.id.save_button);
-
         mClearButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
-                mSignaturePad.clear();
+            public void onClick(View v) {
+                mSignaturePad.clearView();
             }
         });
-
         mSaveButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
+            public void onClick(View v) {
                 Bitmap signatureBitmap = mSignaturePad.getSignatureBitmap();
+
                 if (addJpgSignatureToGallery(signatureBitmap)) {
+                    saveBitmap();
+//                    mDynamicAdapter.setNewBitmap(signatureBitmap);
+//                    mDynamicAdapter.setNewPath(mAbsolutePath);
+                    mSignaturePad.clearView();
                     Toast.makeText(MainActivity.this, "Signature saved into the Gallery", Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(MainActivity.this, "Unable to store the signature", Toast.LENGTH_SHORT).show();
                 }
-                if (addSvgSignatureToGallery(mSignaturePad.getSignatureSvg())) {
-                    Toast.makeText(MainActivity.this, "SVG Signature saved into the Gallery", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(MainActivity.this, "Unable to store the SVG signature", Toast.LENGTH_SHORT).show();
-                }
+//                if (addSvgSignatureToGallery(mSignaturePad.getSignatureSvg())) {
+//                    Toast.makeText(MainActivity.this, "SVG Signature saved into the Gallery", Toast.LENGTH_SHORT).show();
+//                } else {
+//                    Toast.makeText(MainActivity.this, "Unable to store the SVG signature", Toast.LENGTH_SHORT).show();
+//                }
             }
         });
+       mBitmapButton.setOnClickListener(new View.OnClickListener() {
+           @Override
+           public void onClick(View v) {
+               if (mImageView.getVisibility()==View.GONE) {
+                   Bitmap bitmapByView = getBitmapByView(mEText);
+                   addJpgSignatureToGallery(bitmapByView);
+
+                   mImageView.setVisibility(View.VISIBLE);
+                   mImageView.setImageBitmap(bitmapByView);
+               }else {
+                   mImageView.setVisibility(View.GONE);
+               }
+           }
+       });
+
+    }
+    public static Bitmap getBitmapByView(EditText editText) {
+        int h = 0;
+        Bitmap bitmap = null;
+        bitmap = Bitmap.createBitmap(editText.getWidth(), editText.getHeight(),
+                Bitmap.Config.ARGB_8888);//565  没有
+        final Canvas canvas = new Canvas(bitmap);
+        editText.draw(canvas);
+        return bitmap;
+    }
+    public void saveBitmap() {
+        mBitmap = null;
+        try {
+            FileInputStream fis = new FileInputStream(mPhoto);
+            Bitmap bitmap  = BitmapFactory.decodeStream(fis);
+            mBitmap = BitmapUtils.resizeImage(bitmap, 150,150);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        if (mBitmap != null) {
+            //根据Bitmap对象创建ImageSpan对象
+            ImageSpan imageSpan = new ImageSpan(MainActivity.this, mBitmap);
+            //创建一个SpannableString对象，以便插入用ImageSpan对象封装的图像
+            full_name = LAST_NAME + first_name;
+            String s = "[" + full_name + "]";
+            first_name++;
+            SpannableString spannableString = new SpannableString(s);
+            //  用ImageSpan对象替换face
+            spannableString.setSpan(imageSpan, 0, s.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            //将选择的图片追加到EditText中光标所在位置
+            int index = mEText.getSelectionStart(); //获取光标所在位置
+            Editable edit_text = mEText.getEditableText();
+            if (index < 0 || index >= edit_text.length()) {
+                edit_text.append(spannableString);
+            } else {
+                edit_text.insert(index, spannableString);
+            }
+        }
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String permissions[], @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode,@NonNull String permissions[],@NonNull int[] grantResults) {
         switch (requestCode) {
-            case REQUEST_EXTERNAL_STORAGE: {
+            case REQUEST_EXTERNAL_STORAGE:
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.length <= 0
                         || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
@@ -101,7 +195,7 @@ public class MainActivity extends Activity {
                 }
             }
         }
-    }
+
 
     public File getAlbumStorageDir(String albumName) {
         // Get the directory for the user's public pictures directory.
@@ -119,6 +213,7 @@ public class MainActivity extends Activity {
         canvas.drawColor(Color.WHITE);
         canvas.drawBitmap(bitmap, 0, 0, null);
         OutputStream stream = new FileOutputStream(photo);
+        //图片的质量
         newBitmap.compress(Bitmap.CompressFormat.JPEG, 80, stream);
         stream.close();
     }
@@ -126,9 +221,11 @@ public class MainActivity extends Activity {
     public boolean addJpgSignatureToGallery(Bitmap signature) {
         boolean result = false;
         try {
-            File photo = new File(getAlbumStorageDir("SignaturePad"), String.format("Signature_%d.jpg", System.currentTimeMillis()));
-            saveBitmapToJPG(signature, photo);
-            scanMediaFile(photo);
+            mPhoto = new File(getAlbumStorageDir("SignaturePad"), String.format("Signature_%d.jpg", System.currentTimeMillis()));
+            saveBitmapToJPG(signature, mPhoto);
+            mAbsolutePath = mPhoto.getAbsolutePath();
+            KLog.d("shiming path"+mAbsolutePath);
+            //            scanMediaFile(photo);
             result = true;
         } catch (IOException e) {
             e.printStackTrace();
@@ -181,4 +278,6 @@ public class MainActivity extends Activity {
             );
         }
     }
+
+
 }

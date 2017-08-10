@@ -1,67 +1,70 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                xmlns:tools="http://schemas.android.com/tools"
-                xmlns:signature="http://schemas.android.com/apk/res-auto"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:paddingBottom="@dimen/activity_vertical_margin"
-                android:paddingLeft="@dimen/activity_horizontal_margin"
-                android:paddingRight="@dimen/activity_horizontal_margin"
-                android:paddingTop="@dimen/activity_vertical_margin"
-                tools:context=".MainActivity">
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical">
 
-
-    <RelativeLayout
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            android:layout_above="@+id/buttons_container"
-            android:id="@+id/signature_pad_container">
-
-        <FrameLayout
-                android:layout_width="fill_parent"
-                android:layout_height="1dp"
-                android:background="@android:color/darker_gray"
-                android:layout_marginBottom="8dp"
-                android:layout_above="@+id/signature_pad_description" />
-
-        <TextView
-                android:id="@+id/signature_pad_description"
-                android:layout_width="wrap_content"
-                android:layout_centerHorizontal="true"
-                android:layout_height="wrap_content"
-                android:textColor="@android:color/darker_gray"
-                android:layout_marginBottom="16dp"
-                android:layout_alignParentBottom="true"
-                android:text="@string/agreement" />
-
-        <com.github.gcacace.signaturepad.views.SignaturePad
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:id="@+id/signature_pad" />
-    </RelativeLayout>
+    <!--  <android.support.v7.widget.RecyclerView
+          android:id="@+id/rc_who_can_select"
+          android:layout_width="match_parent"
+          android:layout_height="0dp"
+          android:layout_weight="1"/>-->
 
     <LinearLayout
-            android:id="@+id/buttons_container"
-            android:paddingTop="16dp"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_alignParentBottom="true">
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="right"
+        android:orientation="vertical"
+        android:padding="15dp">
 
-        <Button
-                android:id="@+id/clear_button"
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:text="@string/clear_pad"
-                android:enabled="false" />
-
-        <Button
-                android:id="@+id/save_button"
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:text="@string/save_signature"
-                android:enabled="false" />
+        <EditText
+            android:textCursorDrawable="@drawable/shap_editext"
+            android:id="@+id/modify_edit_text_view"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#00000000"
+            android:focusable="true"
+            android:gravity="left|top"
+            android:maxLength="1000"
+            android:textSize="15sp"/>
     </LinearLayout>
+    <ImageView
+        android:background="#4400ff00"
+        android:visibility="gone"
+        android:id="@+id/iamgeview"
+        android:scaleType="centerCrop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+    <com.github.gcacace.signaturepad.views.SignaturePad
+        android:id="@+id/signature_pad"
+        android:layout_width="match_parent"
+        android:layout_height="250dp"
+        android:background="#44660450"/>
 
-</RelativeLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom">
+
+        <Button
+            android:id="@+id/clear"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/clear_pad"/>
+        <Button
+            android:id="@+id/bitmap"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="bitmap"/>
+        <Button
+            android:id="@+id/save"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="save_signature"/>
+    </LinearLayout>
+</LinearLayout>

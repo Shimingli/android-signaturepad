@@ -37,11 +37,16 @@
         android:scaleType="centerCrop"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
-    <com.github.gcacace.signaturepad.views.SignaturePad
+  <!--  <com.github.gcacace.signaturepad.views.SignaturePad
         android:id="@+id/signature_pad"
         android:layout_width="match_parent"
         android:layout_height="250dp"
-        android:background="#44660450"/>
+        android:background="#44660450"/>-->
+    <com.github.gcacace.signaturepad.views.LinePathView
+        android:layout_width="match_parent"
+        android:id="@+id/signature_pad"
+        android:background="#44660450"
+        android:layout_height="250dp"/>
 
     <LinearLayout
         android:layout_width="match_parent"

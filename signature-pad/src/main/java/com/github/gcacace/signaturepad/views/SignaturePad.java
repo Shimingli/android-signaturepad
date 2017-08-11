@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SignaturePad extends View {
+//    private final MyGL mMyGL;
     //View state
     private List<TimedPoint> mPoints;
     private boolean mIsEmpty;
@@ -77,6 +78,20 @@ public class SignaturePad extends View {
 
     public SignaturePad(Context context, AttributeSet attrs) {
         super(context, attrs);
+
+//
+//        // Create an OpenGL ES 2.0 context.
+//        setEGLContextClientVersion(2);
+//        //fix for error No Config chosen, but I don't know what this does.
+//        //Rgb8888  16  0位数 的bitmap
+//        super.setEGLConfigChooser(8,8,8,8,16, 0);
+//        mMyGL = new MyGL();
+//        setRenderer(mMyGL);
+//        // Render the view only when there is a change in the drawing data
+//        //        只有在需要重画的时候才画下一幅。这种模式就比较节约CPU和GPU一些，适合用来画不经常需要刷新的情况。多说一句，系统如何知道需要重画了呢？当然是你要告诉它……
+//        //        调用GLSurfaceView的requestRender ()方法，告诉它，你脏了。
+//        //        RENDERMODE_CONTINUOUSLY画动画
+//        setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
 
         TypedArray a = context.getTheme().obtainStyledAttributes(
                 attrs,
@@ -247,7 +262,8 @@ public class SignaturePad extends View {
             default:
                 return false;
         }
-        invalidate(
+
+        postInvalidate(
                 (int) (mDirtyRect.left - mMaxWidth),
                 (int) (mDirtyRect.top - mMaxWidth),
                 (int) (mDirtyRect.right + mMaxWidth),

@@ -27,7 +27,7 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.github.gcacace.signaturepad.utils.logger.KLog;
-import com.github.gcacace.signaturepad.views.SignaturePad;
+import com.github.gcacace.signaturepad.views.LinePathView;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -43,7 +43,7 @@ public class MainActivity extends Activity {
 
     private static final int REQUEST_EXTERNAL_STORAGE = 1;
     private static String[] PERMISSIONS_STORAGE = {Manifest.permission.WRITE_EXTERNAL_STORAGE};
-    private SignaturePad mSignaturePad;
+    private LinePathView mSignaturePad;
     private Button mClearButton;
     private Button mSaveButton;
     private DynamicAdapter mDynamicAdapter;
@@ -73,6 +73,21 @@ public class MainActivity extends Activity {
         mSaveButton = (Button) findViewById(R.id.save);
         mBitmapButton = (Button) findViewById(R.id.bitmap);
         mImageView = (ImageView) findViewById(R.id.iamgeview);
+        mBitmapButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, Main2Activity.class);
+                                    startActivity(intent);
+//                if (mImageView.getVisibility()==View.GONE){
+//                    mImageView.setVisibility(View.VISIBLE);
+//                    Intent intent = new Intent(MainActivity.this, Main2Activity.class);
+//                    startActivity(intent);
+//                }else {
+//                    mImageView.setVisibility(View.GONE);
+//                }
+
+            }
+        });
         //        GridLayoutManager gridLayoutManager = new GridLayoutManager(this, 5) {
 //            @Override
 //            public boolean canScrollVertically() {
@@ -83,8 +98,30 @@ public class MainActivity extends Activity {
 //        mDynamicAdapter = new DynamicAdapter(null,this);
 //        recyclerView.setAdapter(mDynamicAdapter);
         mEText = (EditText) findViewById(R.id.modify_edit_text_view);
-        mSignaturePad = (SignaturePad) findViewById(R.id.signature_pad);
-        mSignaturePad.setOnSignedListener(new SignaturePad.OnSignedListener() {
+//        mEText.setInputType(InputType.TYPE_NULL);
+        //禁止输入文字，但是不能输入了
+        mEText.setFocusable(false);
+        mSignaturePad = (LinePathView) findViewById(R.id.signature_pad);
+
+       mClearButton.setOnClickListener(new View.OnClickListener() {
+           @Override
+           public void onClick(View v) {
+               mSignaturePad.clear();
+           }
+       });
+        mSaveButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+//                Bitmap bitMap = mSignaturePad.getSignatureBitmap();
+//                boolean b = addJpgSignatureToGallery(bitMap);
+//                if (b){
+//                    saveBitmap();
+//                    mSignaturePad.clear();
+//                }
+            }
+        });
+
+     /*   mSignaturePad.setOnSignedListener(new SignaturePad.OnSignedListener() {
             @Override
             public void onStartSigning() {
                 Toast.makeText(MainActivity.this, "OnStartSigning", Toast.LENGTH_SHORT).show();
@@ -142,7 +179,7 @@ public class MainActivity extends Activity {
                    mImageView.setVisibility(View.GONE);
                }
            }
-       });
+       });*/
 
     }
     public static Bitmap getBitmapByView(EditText editText) {
